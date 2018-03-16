@@ -1,0 +1,5 @@
+*.*~
+*.ibc
+tasks/*.tree
+tasks/*.res
+spsc_idris

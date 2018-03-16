@@ -1,0 +1,32 @@
+package spsc-idris
+
+opts = "-p contrib"
+
+main = Main
+executable = spsc_idris
+
+modules =
+    SLanguage,
+    SParsers,
+    SLanguageTests,
+    Algebra,
+    AlgebraTests,
+    HE,
+    HETests,
+    MSG,
+    MSGTests,
+    ProcessTree,
+    PTBuilder,
+    PTBuilderTests,
+    ResProgGen,
+    ResProgGenTests,
+    PrettyPrinter,
+    Main
+
+tests =
+    SLanguageTests.allTests,
+    AlgebraTests.allTests,
+    HETests.allTests,
+    MSGTests.allTests,
+    PTBuilderTests.allTests,
+    ResProgGenTests.allTests

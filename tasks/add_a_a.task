@@ -1,0 +1,5 @@
+gAdd(a, a)
+where
+
+gAdd(Z, y) = y;
+gAdd(S(x), y)=S(gAdd(x, y));
