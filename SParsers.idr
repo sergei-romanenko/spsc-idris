@@ -15,14 +15,10 @@ import SLanguage
 data IdentKind
   = UId
   | LId
-  | FId
-  | GId
 
 implementation Eq IdentKind where
   (==) UId UId = True
   (==) LId LId = True
-  (==) FId FId = True
-  (==) GId GId = True
   (==) _ _ = False
 
 data SLLTokenKind
@@ -61,21 +57,12 @@ uId = expect upper <+> identifier
 lId : Lexer
 lId = expect lower <+> identifier
 
-fId : Lexer
-fId = expect (is 'f') <+> identifier
-
-gId : Lexer
-gId = expect (is 'g') <+> identifier
-
 
 sllTokenMap : TokenMap SLLToken
 sllTokenMap = toTokenMap $
   [ (spaces, TkIgnore)
-  --, (exact "where" <+> eof, TkWhere)  
   , (exact "where" <+> opt spaces, TkWhere)  
   , (uId, TkIdent UId)
-  , (fId, TkIdent FId)
-  , (gId, TkIdent GId)
   , (lId, TkIdent LId)
   , (is '(', TkPunct)
   , (is ')', TkPunct)
@@ -97,15 +84,8 @@ lexSLL s
 uIdent : Grammar SLLToken True Name
 uIdent = match (TkIdent UId)
 
-fIdent : Grammar SLLToken True Name
-fIdent = match (TkIdent FId)
-
-gIdent : Grammar SLLToken True Name
-gIdent = match (TkIdent GId)
-
 lIdent : Grammar SLLToken True Name
-lIdent =
-  match (TkIdent FId) <|> match (TkIdent GId) <|> match (TkIdent LId)
+lIdent =  match (TkIdent LId)
 
 symbol : String -> Grammar SLLToken True ()
 symbol req = terminal (\t =>
@@ -194,7 +174,7 @@ fRule =
 
 gRule : Grammar SLLToken True RRule
 gRule =
-  do functionName <- gIdent
+  do functionName <- lIdent
      symbol "("
      cname <- uIdent
      commit
@@ -255,9 +235,23 @@ toProgram : (isGName : Name -> Bool) -> RProgram -> Program
 toProgram isGName (MkRProgram rules) =
   MkProgram (map (toRule isGName) rules)
 
-toTask : (isGName : Name -> Bool) -> RTask -> Task
-toTask isGName (MkRTask e p) =
-  MkTask (toExp isGName e) (toProgram isGName p)
+-- Separating f-functions from g-functions.
+
+getGNames : List RRule -> List Name
+getGNames [] = []
+getGNames (RFRule name _ _ :: rules) =
+  getGNames rules
+getGNames (RGRule name _ _ _ _ :: rules) =
+  name :: getGNames rules
+
+isGNameInProg : RProgram -> Name -> Bool
+isGNameInProg (MkRProgram rules) =
+  let gNames = getGNames rules in flip elem gNames
+
+toTask : RTask -> Task
+toTask (MkRTask e p) =
+  let isG = isGNameInProg p in
+  MkTask (toExp isG e) (toProgram isG p)
 
 -- Parser
 
@@ -285,4 +279,4 @@ parseProg input = toProgram startsWithG <$> parseStr program input
 
 export
 parseTask : String -> Maybe Task
-parseTask input = toTask startsWithG <$> parseStr task input
+parseTask input = toTask <$> parseStr task input

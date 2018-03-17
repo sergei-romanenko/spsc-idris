@@ -34,14 +34,13 @@ isVarTest tree (b@(MkNode _ _ _ _ (bChId :: _) _)) =
 isFuncNode : List NodeId -> NodeId -> Bool
 isFuncNode fIds nId = nId `elem` fIds
 
-getFGSig : Tree -> String -> NodeId -> Name -> List Name ->
+getFGSig : Tree -> NodeId -> Name -> List Name ->
            State (Sigs, List Rule) Sig
-getFGSig tree prefix nId name vs =
+getFGSig tree nId name vs =
   do (sigs, rules) <- get
      case the (Maybe Sig) $ lookup nId sigs of
        Nothing =>
-         do let name' = prefix ++ strTail name ++
-                               (show $ S (length $ toList sigs))
+         do let name' = name ++ (show $ S (length $ toList sigs))
             let sig' = (name', vs)
             let sigs' = insert nId sig' sigs
             put $ (sigs', rules)
@@ -105,7 +104,7 @@ mutual
     let params = vars bE in
     if isVarTest tree b then
       do (sigs, rules) <- get
-         (name', _) <- getFGSig tree "g" bId name params
+         (name', _) <- getFGSig tree bId name params
          bodies <- genResExps tree fId bChIds
          let contrs = getChContr tree bChIds
          let grules =
@@ -115,7 +114,7 @@ mutual
          pure $ Call GCall name' (map Var params)
     else if isFuncNode fId bId then
       do (sigs, rules) <- get
-         (name', params') <- getFGSig tree "f" bId name params
+         (name', params') <- getFGSig tree bId name params
          let bChNode = getNode tree (hd bChIds)
          body' <- genResExp tree fId bChNode
          putFGRules [FRule name' params' body'] 

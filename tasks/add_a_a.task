@@ -1,5 +1,5 @@
-gAdd(a, a)
+add(a, a)
 where
 
-gAdd(Z, y) = y;
-gAdd(S(x), y)=S(gAdd(x, y));
+add(Z, y) = y;
+add(S(x), y)=S(add(x, y));

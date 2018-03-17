@@ -1,8 +1,8 @@
-gMult(a, b)
+mult(a, b)
 where
 
-gAdd(Z, y) = y;
-gAdd(S(x), y) = S(gAdd(x, y));
+add(Z, y) = y;
+add(S(x), y) = S(add(x, y));
 
-gMult(Z, y) = Z;
-gMult(S(x), y) = gAdd(gMult(x, y), y);
+mult(Z, y) = Z;
+mult(S(x), y) = add(mult(x, y), y);

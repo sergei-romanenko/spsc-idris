@@ -1,5 +1,5 @@
-gAddAcc(a, b)
+addAcc(a, b)
 where
 
-gAddAcc(Z, y) = y;
-gAddAcc(S(x), y) = gAddAcc(x, S(y));
+addAcc(Z, y) = y;
+addAcc(S(x), y) = addAcc(x, S(y));
