@@ -126,6 +126,34 @@ kwWhere : Grammar SLLToken True ()
 kwWhere = match TkWhere
 
 --
+-- Raw syntax trees
+--
+
+mutual
+
+  RArg : Type
+  RArg = RExp
+
+  RArgs : Type
+  RArgs = List RArg
+
+  RBindings : Type
+  RBindings = List (Name, RExp)
+
+  data RExp
+    = RVar Name
+    | RCtr Name RArgs
+    | RCall Name RArgs
+
+data RRule
+  = RFRule Name Params RExp
+  | RGRule Name Name Params Params RExp
+
+data RProgram = MkRProgram (List RRule)
+
+data RTask = MkRTask RExp RProgram
+
+--
 -- Programs
 --
 
@@ -133,84 +161,109 @@ kwWhere = match TkWhere
 
 mutual
 
-  expression : Grammar SLLToken True Exp
-  expression = constr <|> fCall <|> gCall <|> variable
+  expression : Grammar SLLToken True RExp
+  expression = constr <|> call <|> variable
 
-  constr : Grammar SLLToken True Exp
+  constr : Grammar SLLToken True RExp
   constr =
     do ctrName <- uIdent
        commit
        argList <- option [] (parens (commaSep expression))
-       pure (Call Ctr ctrName argList)
+       pure $ RCtr ctrName argList
 
-  fCall : Grammar SLLToken True Exp
-  fCall =
-    do name <- fIdent
+  call : Grammar SLLToken True RExp
+  call =
+    do name <- lIdent
        argList <- parens (commaSep1 expression)
-       pure (Call FCall name argList)
+       pure $ RCall name argList
 
-  gCall : Grammar SLLToken True Exp
-  gCall =
-    do name <- gIdent
-       argList <- parens (commaSep1 expression)
-       pure (Call GCall name argList)
-
-  variable : Grammar SLLToken True Exp
+  variable : Grammar SLLToken True RExp
   variable =
     do name <- lIdent
-       pure (Var name)
+       pure $ RVar name
 
-fRule : Grammar SLLToken True Rule
+fRule : Grammar SLLToken True RRule
 fRule =
-  do functionName <- fIdent
-     commit
+  do functionName <- lIdent
      paramList <- parens (commaSep1 lIdent)
+     commit
      symbol "="
      ruleRhs <- expression
      symbol ";"
-     pure (FRule functionName paramList ruleRhs)
+     pure $ RFRule functionName paramList ruleRhs
 
-  
-gRule : Grammar SLLToken True Rule
+gRule : Grammar SLLToken True RRule
 gRule =
   do functionName <- gIdent
-     commit
      symbol "("
      cname <- uIdent
+     commit
      cparamList <- option [] (parens (commaSep lIdent))
      paramList <- many (symbol "," *> lIdent)
      symbol ")"; symbol "="
      ruleRhs <- expression
      symbol ";"
-     pure (GRule functionName cname cparamList paramList ruleRhs)
+     pure $ RGRule functionName cname cparamList paramList ruleRhs
 
-rule : Grammar SLLToken True Rule
+rule : Grammar SLLToken True RRule
 rule = fRule <|> gRule
 
-program : Grammar SLLToken False Program
+program : Grammar SLLToken False RProgram
 program =
   do ruleList <- many(rule)
      eof
-     pure $ MkProgram ruleList
+     pure $ MkRProgram ruleList
 
 --
 -- Supercompilation tasks
 --
 
-task : Grammar SLLToken True Task
+task : Grammar SLLToken True RTask
 task =
   do e <- expression
      kwWhere
      p <- program
      eof
-     pure $ MkTask e p
+     pure $ MkRTask e p
+
+
+--
+-- From the raw abstract syntax to the abstract syntax.
+--
+
+startsWithG : String -> Bool
+startsWithG name =
+  case unpack name of
+    [] => False
+    (x :: xs) => x == 'g'
+
+toExp : (isGName : Name -> Bool) -> RExp -> Exp
+toExp isGName (RVar name) = Var name
+toExp isGName (RCtr name args) =
+  Call Ctr name (map (toExp isGName) args)
+toExp isGName (RCall name args) =
+  Call (if isGName name then GCall else FCall)
+        name (map (toExp isGName) args)
+
+toRule : (isGName : Name -> Bool) -> RRule -> Rule
+toRule isGName (RFRule name params e) =
+  FRule name params (toExp isGName e)
+toRule isGName (RGRule name cname cparams params e) =
+  GRule name cname cparams params (toExp isGName e)
+
+toProgram : (isGName : Name -> Bool) -> RProgram -> Program
+toProgram isGName (MkRProgram rules) =
+  MkProgram (map (toRule isGName) rules)
+
+toTask : (isGName : Name -> Bool) -> RTask -> Task
+toTask isGName (MkRTask e p) =
+  MkTask (toExp isGName e) (toProgram isGName p)
 
 -- Parser
 
 ignored : SLLToken -> Bool
 ignored (Tok TkIgnore _) = True
 ignored _ = False
-
 
 parseStr : Grammar SLLToken c ast -> String -> Maybe ast
 parseStr g input =
@@ -221,14 +274,15 @@ parseStr g input =
         _ => Nothing
     Nothing => Nothing
 
+
 export
 parseExp : String -> Maybe Exp
-parseExp input = parseStr expression input
+parseExp input = toExp startsWithG <$> parseStr expression input
 
 export
 parseProg : String -> Maybe Program
-parseProg input = parseStr program input
+parseProg input = toProgram startsWithG <$> parseStr program input
 
 export
 parseTask : String -> Maybe Task
-parseTask input = parseStr task input
+parseTask input = toTask startsWithG <$> parseStr task input
