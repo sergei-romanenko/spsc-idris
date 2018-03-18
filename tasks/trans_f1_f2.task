@@ -1,3 +1,5 @@
+-- Removing transient configurations.
+
 f1(a)
 where
 

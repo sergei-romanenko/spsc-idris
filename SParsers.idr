@@ -61,6 +61,7 @@ lId = expect lower <+> identifier
 sllTokenMap : TokenMap SLLToken
 sllTokenMap = toTokenMap $
   [ (spaces, TkIgnore)
+  , (lineComment (exact "--"), TkIgnore)
   , (exact "where" <+> opt spaces, TkWhere)  
   , (uId, TkIdent UId)
   , (lId, TkIdent LId)
