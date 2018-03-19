@@ -226,9 +226,9 @@ toExp isGName (RCall name args) =
 
 toRule : (isGName : Name -> Bool) -> RRule -> Rule
 toRule isGName (RFRule name params e) =
-  FRule name params (toExp isGName e)
+  Left $ FRule name params (toExp isGName e)
 toRule isGName (RGRule name cname cparams params e) =
-  GRule name cname cparams params (toExp isGName e)
+  Right $ GRule name cname cparams params (toExp isGName e)
 
 toProgram : (isGName : Name -> Bool) -> RProgram -> Program
 toProgram isGName (MkRProgram rules) =

@@ -15,20 +15,22 @@ import ProcessTree
 lookupF : Program -> Name -> (Params, Exp)
 lookupF (MkProgram rules) name =
   case the (List (Params, Exp))
-       [ (params, body) | FRule name' params body <- rules, name == name' ] of
+       [ (params, body) |
+         FRule name' params body <- lefts rules, name == name' ] of
     pb :: _ => pb
 
 lookupGC : Program -> Name -> Name -> (Params, Params, Exp)
 lookupGC (MkProgram rules) name cname =
   case the (List (Params, Params, Exp))
-    [ (cparams, params, body) | GRule name' cname' cparams params body <- rules,
+    [ (cparams, params, body) |
+      GRule name' cname' cparams params body <- rights rules,
       name == name', cname == cname' ] of
     cppb :: _ => cppb
 
 lookupG : Program -> Name -> List (Name, Params, Params, Exp)
 lookupG (MkProgram rules) name =
   [ (cname, cparams, params, body) |
-    GRule name' cname cparams params body <- rules,
+    GRule name' cname cparams params body <- rights rules,
     name == name' ]
 
 -- Driving

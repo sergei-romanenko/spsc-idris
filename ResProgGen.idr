@@ -108,7 +108,7 @@ mutual
          bodies <- genResExps tree fId bChIds
          let contrs = getChContr tree bChIds
          let grules =
-               [GRule name' cname' cparams' (tl params) body' |
+               [Right $ GRule name' cname' cparams' (tl params) body' |
                   ((cname', cparams'), body') <- contrs `zip` bodies]
          putFGRules grules                
          pure $ Call GCall name' (map Var params)
@@ -117,7 +117,7 @@ mutual
          (name', params') <- getFGSig tree bId name params
          let bChNode = getNode tree (hd bChIds)
          body' <- genResExp tree fId bChNode
-         putFGRules [FRule name' params' body'] 
+         putFGRules [Left $ FRule name' params' body'] 
          pure $ Call FCall name' (map Var params)
     else
       let bChNode = getNode tree (hd bChIds) in

@@ -7,8 +7,8 @@ executable = spsc_idris
 
 modules =
     SLanguage,
-    SParsers,
     SLanguageTests,
+    SParsers,
     Algebra,
     AlgebraTests,
     HE,

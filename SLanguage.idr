@@ -28,9 +28,11 @@ mutual
     | Call CKind Name Args
     | Let Exp Bindings
 
-data Rule
-  = FRule Name Params Exp
-  | GRule Name Name Params Params Exp
+data FRuleT  = FRule Name Params Exp
+data GRuleT  = GRule Name Name Params Params Exp
+
+Rule : Type
+Rule = Either FRuleT GRuleT
 
 data Program = MkProgram (List Rule)
 
@@ -81,18 +83,21 @@ mutual
     show (Call _ name args) = name ++ showArgs args
     show (Let e bindings) = "let " ++ showBindings bindings ++ " in " ++ show e
 
-  implementation Show Rule where
-    show (FRule name params expression) =
-      name ++ "(" ++ showParams params ++ ")=" ++ show expression ++ ";"
-    show (GRule name cname cparams params expression) =
-      name ++ "(" ++ showPat cname cparams ++ showParamsTail params ++ ")="
+implementation Show FRuleT where
+  show (FRule name params exp) =
+    name ++ "(" ++ showParams params ++ ")=" ++ show exp ++ ";"
+
+implementation Show GRuleT where
+  show (GRule name cname cparams params expression) =
+    name ++ "(" ++ showPat cname cparams ++ showParamsTail params ++ ")="
         ++ show expression ++ ";"
 
-  implementation Show Program where
-    show (MkProgram rules) = concat [show rule | rule <- rules]
+implementation Show Program where
+  show (MkProgram rules) = concat [either show show rule | rule <- rules]
 
-  implementation Show Task where
-    show (MkTask e prog) = show e ++ " where " ++ show prog
+
+implementation Show Task where
+  show (MkTask e prog) = show e ++ " where " ++ show prog
 
 --
 -- Eq
