@@ -72,11 +72,11 @@ sllTokenMap = toTokenMap $
   , (is ';', TkPunct)
   ]
 
-lexSLL : String -> Maybe (List SLLToken)
+lexSLL : String -> Either (Int, Int, String) (List SLLToken)
 lexSLL s
   = case lex sllTokenMap s of
-         (tokens, _, _, "") => Just $ map TokenData.tok tokens
-         _ => Nothing
+         (tokens, _, _, "") => Right $ map TokenData.tok tokens
+         (tokens, l, c, rest) => Left (l, c, rest)
 
 --
 -- SLL parser
@@ -191,8 +191,7 @@ rule = fRule <|> gRule
 
 program : Grammar SLLToken False RProgram
 program =
-  do ruleList <- many(rule)
-     eof
+  do ruleList <- many (rule)
      pure $ MkRProgram ruleList
 
 --
@@ -204,7 +203,6 @@ task =
   do e <- expression
      kwWhere
      p <- program
-     eof
      pure $ MkRTask e p
 
 
@@ -260,24 +258,38 @@ ignored : SLLToken -> Bool
 ignored (Tok TkIgnore _) = True
 ignored _ = False
 
-parseStr : Grammar SLLToken c ast -> String -> Maybe ast
+getTokenText : List SLLToken -> String
+getTokenText [] = "eof"
+getTokenText (tk :: tks) = text tk
+
+parseStr : Grammar SLLToken c ast -> String -> Either String ast
 parseStr g input =
   case lexSLL input of
-    Just toks =>
+    Right toks =>
       case parse g $ filter (not . ignored) toks of
-        Right (j, []) => Just j
-        _ => Nothing
-    Nothing => Nothing
-
+        Right (j, []) => Right j
+        Right (j , tk :: _) =>
+          Left ("Parsing error: unexpected token " ++ text tk ++ ".")
+        Left (Error msg tks) =>
+           Left ("Parsing error: " ++ msg ++ ", token " ++ getTokenText tks)
+    Left (l, c, rest) =>
+      Left ("Lexing error (line " ++ cast l ++ ", column " ++ cast c ++ "): "
+                    ++ rest)
 
 export
 parseExp : String -> Maybe Exp
-parseExp input = toExp startsWithG <$> parseStr expression input
+parseExp input =
+  case parseStr expression input of
+    Right e => Just $ toExp startsWithG e
+    Left msg => Nothing
 
 export
 parseProg : String -> Maybe Program
-parseProg input = toProgram startsWithG <$> parseStr program input
+parseProg input =
+  case parseStr program input of
+    Right p => Just $ toProgram startsWithG p
+    Left msg => Nothing
 
 export
-parseTask : String -> Maybe Task
+parseTask : String -> Either String Task
 parseTask input = toTask <$> parseStr task input

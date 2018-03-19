@@ -23,8 +23,8 @@ main = do
     | Left ferr =>
         putStrLn ("Error reading file " ++ pathTask ++ ": " ++ show ferr)
   putStrLn ("* Task read from " ++ pathTask)
-  let Just (MkTask e prog) = parseTask task
-    | Nothing => putStrLn ("Syntax error(s) in " ++ pathTask ++ " !")
+  let Right (MkTask e prog) = parseTask task
+    | Left msg => putStrLn msg
   let tree = advancedBuilder prog e
   Right _ <- writeFile pathTree (ppTree $ tree) 
     | Left ferr =>
