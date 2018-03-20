@@ -27,6 +27,9 @@ Sig = (Name, List Name)
 Sigs : Type
 Sigs = SortedMap Nat Sig
 
+SigsRules : Type
+SigsRules = (Sigs, List FRuleT, List GRuleT)
+
 isVarTest : Tree -> Node -> Bool
 isVarTest tree (b@(MkNode _ _ _ _ (bChId :: _) _)) =
   isJust $ nodeContr $ getNode tree bChId
@@ -35,24 +38,30 @@ isFuncNode : List NodeId -> NodeId -> Bool
 isFuncNode fIds nId = nId `elem` fIds
 
 getFGSig : Tree -> NodeId -> Name -> List Name ->
-           State (Sigs, List Rule) Sig
+           State SigsRules Sig
 getFGSig tree nId name vs =
-  do (sigs, rules) <- get
+  do (sigs, fRules, gRules) <- get
      case the (Maybe Sig) $ lookup nId sigs of
        Nothing =>
          do let name' = name ++ (show $ S (length $ toList sigs))
             let sig' = (name', vs)
             let sigs' = insert nId sig' sigs
-            put $ (sigs', rules)
+            put $ (sigs', fRules, gRules)
             pure sig'
        Just sig' =>
          pure sig'         
 
-putFGRules : List Rule -> State (Sigs, List Rule) ()
-putFGRules newRules =
-  do (sigs, rules) <- get
-     let rules' = rules ++ newRules
-     put (sigs, rules')
+putFRules : List FRuleT -> State SigsRules ()
+putFRules newRules =
+  do (sigs, fRules, gRules) <- get
+     let fRules' = fRules ++ newRules
+     put (sigs, fRules', gRules)
+
+putGRules : List GRuleT -> State SigsRules ()
+putGRules newRules =
+  do (sigs, fRules, gRules) <- get
+     let gRules' = gRules ++ newRules
+     put (sigs, fRules, gRules')
 
 getChContr : Tree -> List NodeId -> List (Name, List Name)
 getChContr tree nIds =
@@ -62,7 +71,7 @@ getChContr tree nIds =
 
 mutual
 
-  genResExp : Tree -> List NodeId -> Node -> State (Sigs, List Rule) Exp
+  genResExp : Tree -> List NodeId -> Node -> State SigsRules Exp
   genResExp tree fIds b@(MkNode _ bE _ _ bChIds Nothing) =
     case bE of
       Var _ => pure $ bE
@@ -94,12 +103,12 @@ mutual
            pure $ applySubst subst (Call GCall name args)
 
   genResExps : Tree -> List NodeId -> List NodeId ->
-                    State (Sigs, List Rule) (List Exp)
+                    State SigsRules (List Exp)
   genResExps tree fIds nIds =
     for (map (getNode tree) nIds) (genResExp tree fIds)
 
   genResCall : Tree -> List NodeId -> Node -> Name -> List Exp ->
-                    State (Sigs, List Rule) Exp
+                    State SigsRules Exp
   genResCall tree fId (b@(MkNode bId bE _ _ bChIds _)) name args =
     let params = vars bE in
     if isVarTest tree b then
@@ -107,31 +116,31 @@ mutual
          (name', _) <- getFGSig tree bId name params
          bodies <- genResExps tree fId bChIds
          let contrs = getChContr tree bChIds
-         let grules =
-               [Right $ GRule name' cname' cparams' (tl params) body' |
+         let gRules =
+               [ GRule name' cname' cparams' (tl params) body' |
                   ((cname', cparams'), body') <- contrs `zip` bodies]
-         putFGRules grules                
+         putGRules gRules
          pure $ Call GCall name' (map Var params)
     else if isFuncNode fId bId then
       do (sigs, rules) <- get
          (name', params') <- getFGSig tree bId name params
          let bChNode = getNode tree (hd bChIds)
          body' <- genResExp tree fId bChNode
-         putFGRules [Left $ FRule name' params' body'] 
+         putFRules [ FRule name' params' body']
          pure $ Call FCall name' (map Var params)
     else
       let bChNode = getNode tree (hd bChIds) in
       genResExp tree fId bChNode
 
-genResidualProgram' : Tree -> State (Sigs, List Rule) (Exp, Program)
+genResidualProgram' : Tree -> State SigsRules (Exp, Program)
 genResidualProgram' tree =
   do let initNode = getNode tree 0
      let fIds = funcNodeIds tree
      resExp <- genResExp tree fIds initNode
-     (_, rules) <- get
-     pure (resExp, MkProgram rules)
+     (_, fRules, gRules) <- get
+     pure (resExp, MkProgram fRules gRules)
 
 export
 genResidualProgram : Tree -> (Exp, Program)
 genResidualProgram tree =
-  (evalState $ genResidualProgram' tree) (empty, [])
+  (evalState $ genResidualProgram' tree) (empty, [], [])

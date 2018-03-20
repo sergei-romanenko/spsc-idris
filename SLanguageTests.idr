@@ -31,13 +31,15 @@ Test103Rule =
 Test104Program : IO Bool
 Test104Program =
   do shEq (MkProgram
-            [ Left $ FRule "f" [] (Call Ctr "A" [])
-            , Left $ FRule "f1" [] (Call Ctr "A1" [])])
+            [ FRule "f" [] (Call Ctr "A" [])
+            , FRule "f1" [] (Call Ctr "A1" [])]
+            [])
           "f()=A;f1()=A1;"
      shEq (MkProgram
-            [ Right $ GRule"g" "C" [] [] (Call Ctr "A" [])
-            , Right $ GRule "g1" "C" [] ["x"] (Call Ctr "A" [])
-            , Right $ GRule "g2" "C" ["x"] [] (Call Ctr "A" [])])
+            []
+            [ GRule"g" "C" [] [] (Call Ctr "A" [])
+            , GRule "g1" "C" [] ["x"] (Call Ctr "A" [])
+            , GRule "g2" "C" ["x"] [] (Call Ctr "A" [])])
           "g(C)=A;g1(C,x)=A;g2(C(x))=A;"
 
 Test201Eq : IO Bool

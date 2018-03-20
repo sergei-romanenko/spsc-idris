@@ -34,7 +34,7 @@ data GRuleT  = GRule Name Name Params Params Exp
 Rule : Type
 Rule = Either FRuleT GRuleT
 
-data Program = MkProgram (List Rule)
+data Program = MkProgram (List FRuleT) (List GRuleT)
 
 data Task = MkTask Exp Program
 
@@ -93,8 +93,8 @@ implementation Show GRuleT where
         ++ show expression ++ ";"
 
 implementation Show Program where
-  show (MkProgram rules) = concat [either show show rule | rule <- rules]
-
+  show (MkProgram fRules gRules) =
+    concatMap show fRules ++ concatMap show gRules
 
 implementation Show Task where
   show (MkTask e prog) = show e ++ " where " ++ show prog

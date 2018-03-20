@@ -13,24 +13,24 @@ import ProcessTree
 -- Looking up
 
 lookupF : Program -> Name -> (Params, Exp)
-lookupF (MkProgram rules) name =
+lookupF (MkProgram fRules gRules) name =
   case the (List (Params, Exp))
        [ (params, body) |
-         FRule name' params body <- lefts rules, name == name' ] of
+         FRule name' params body <- fRules, name == name' ] of
     pb :: _ => pb
 
 lookupGC : Program -> Name -> Name -> (Params, Params, Exp)
-lookupGC (MkProgram rules) name cname =
+lookupGC (MkProgram fRules gRules) name cname =
   case the (List (Params, Params, Exp))
     [ (cparams, params, body) |
-      GRule name' cname' cparams params body <- rights rules,
+      GRule name' cname' cparams params body <- gRules,
       name == name', cname == cname' ] of
     cppb :: _ => cppb
 
 lookupG : Program -> Name -> List (Name, Params, Params, Exp)
-lookupG (MkProgram rules) name =
+lookupG (MkProgram fRules gRules) name =
   [ (cname, cparams, params, body) |
-    GRule name' cname cparams params body <- rights rules,
+    GRule name' cname cparams params body <- gRules,
     name == name' ]
 
 -- Driving

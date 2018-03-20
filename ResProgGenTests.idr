@@ -103,7 +103,7 @@ testAdvFromEmb : IO Bool
 testAdvFromEmb = testAS
   "f(x) = g(f(x));g(A) = B;"
   "f(a)"
-  "(f1(a), g2(A)=B;f1(a)=g2(f1(a));)"
+  "(f1(a), f1(a)=g2(f1(a));g2(A)=B;)"
 
 export
 allTests : IO ()

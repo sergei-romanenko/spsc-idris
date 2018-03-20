@@ -8,8 +8,8 @@ import ProcessTree
 %default covering
 
 docProgram : Program -> Doc
-docProgram (MkProgram rules) =
-  vsep (map (text . show) rules)
+docProgram (MkProgram fRules gRules) =
+  vsep (map (text . show) fRules) |$| vsep (map (text . show) gRules)
 
 docTask : Task -> Doc
 docTask (MkTask exp prog) =
