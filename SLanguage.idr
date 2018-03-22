@@ -28,8 +28,19 @@ mutual
     | Call CKind Name Args
     | Let Exp Bindings
 
-data FRuleT  = FRule Name Params Exp
-data GRuleT  = GRule Name Name Params Params Exp
+record FRuleT where
+  constructor FRule
+  rName : Name
+  rParams : Params
+  rExp : Exp
+
+record GRuleT where
+  constructor GRule
+  rName : Name
+  rcName : Name
+  rcParams : Params
+  rParams : Params
+  rExp : Exp
 
 Rule : Type
 Rule = Either FRuleT GRuleT

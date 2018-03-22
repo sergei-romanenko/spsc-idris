@@ -3,6 +3,7 @@ module Main
 import Data.SortedMap
 
 import SLanguage
+import SCheck
 import SParsers
 import ProcessTree
 import PTBuilder
@@ -25,6 +26,8 @@ main = do
   putStrLn ("* Task read from " ++ pathTask)
   let Right (MkTask e prog) = parseTask task
     | Left msg => putStrLn msg
+  let Nothing = checkTask (MkTask e prog)
+      | Just msg => putStrLn msg
   let tree = advancedBuilder prog e
   Right _ <- writeFile pathTree (ppTree $ tree) 
     | Left ferr =>

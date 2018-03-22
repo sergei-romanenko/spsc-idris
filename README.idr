@@ -2,6 +2,8 @@ module README
 
 import SLanguage
 import SLanguageTests
+import SCheck
+import SCheckTests
 import SParsers
 import Algebra
 import AlgebraTests

@@ -8,6 +8,8 @@ executable = spsc_idris
 modules
   = SLanguage
   , SLanguageTests
+  , SCheck
+  , SCheckTests
   , SParsers
   , Algebra
   , AlgebraTests
@@ -25,6 +27,7 @@ modules
 
 tests
   = SLanguageTests.allTests
+  , SCheckTests.allTests
   , AlgebraTests.allTests
   , HETests.allTests
   , MSGTests.allTests

@@ -14,18 +14,15 @@ import ProcessTree
 
 lookupF : Program -> Name -> (Params, Exp)
 lookupF (MkProgram fRules gRules) name =
-  case the (List (Params, Exp))
-       [ (params, body) |
-         FRule name' params body <- fRules, name == name' ] of
-    pb :: _ => pb
+  let Just r = find ((name ==) . rName) fRules
+      | Nothing => idris_crash "lookupF"
+  in (rParams r, rExp r)
 
 lookupGC : Program -> Name -> Name -> (Params, Params, Exp)
 lookupGC (MkProgram fRules gRules) name cname =
-  case the (List (Params, Params, Exp))
-    [ (cparams, params, body) |
-      GRule name' cname' cparams params body <- gRules,
-      name == name', cname == cname' ] of
-    cppb :: _ => cppb
+  let Just r = find (\gr => name == rName gr && cname == rcName gr) gRules
+      | Nothing => idris_crash "lookupGC"
+  in (rcParams r, rParams r, rExp r)
 
 lookupG : Program -> Name -> List (Name, Params, Params, Exp)
 lookupG (MkProgram fRules gRules) name =
