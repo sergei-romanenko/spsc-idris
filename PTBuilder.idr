@@ -22,7 +22,7 @@ lookupGC : Program -> Name -> Name -> (Params, Params, Exp)
 lookupGC (MkProgram fRules gRules) name cname =
   let Just r = find (\gr => name == rName gr && cname == rcName gr) gRules
       | Nothing => idris_crash "lookupGC"
-  in (rcParams r, rParams r, rExp r)
+  in (rcParams r, rdParams r, rExp r)
 
 lookupG : Program -> Name -> List (Name, Params, Params, Exp)
 lookupG (MkProgram fRules gRules) name =

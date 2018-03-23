@@ -23,10 +23,10 @@ mutual
   Bindings : Type
   Bindings = List (Name, Exp)
 
-  data Exp
-    = Var Name
-    | Call CKind Name Args
-    | Let Exp Bindings
+  data Exp : Type where
+    Var  : (name : Name) -> Exp
+    Call : (ckind : CKind) -> (name : Name) -> (args : Args) -> Exp
+    Let  : (exp : Exp) -> (bindings : Bindings) -> Exp
 
 record FRuleT where
   constructor FRule
@@ -39,8 +39,11 @@ record GRuleT where
   rName : Name
   rcName : Name
   rcParams : Params
-  rParams : Params
+  rdParams : Params
   rExp : Exp
+
+rParams : GRuleT -> List Name
+rParams gRule = rcParams gRule ++ rdParams gRule
 
 Rule : Type
 Rule = Either FRuleT GRuleT

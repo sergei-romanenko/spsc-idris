@@ -9,7 +9,7 @@ import ProcessTree
 
 docProgram : Program -> Doc
 docProgram (MkProgram fRules gRules) =
-  vsep (map (text . show) fRules) |$| vsep (map (text . show) gRules)
+  vsep $ (map (text . show) fRules ++ map (text . show) gRules)
 
 docTask : Task -> Doc
 docTask (MkTask exp prog) =
