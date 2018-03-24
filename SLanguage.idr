@@ -10,7 +10,7 @@ Name = String
 Params : Type
 Params = List Name
 
-data CKind = Ctr | FCall | GCall
+data CKind = Ctr | FC | GC
 
 mutual
 
@@ -28,27 +28,27 @@ mutual
     Call : (ckind : CKind) -> (name : Name) -> (args : Args) -> Exp
     Let  : (exp : Exp) -> (bindings : Bindings) -> Exp
 
-record FRuleT where
-  constructor FRule
+record FRule where
+  constructor FR
   rName : Name
   rParams : Params
   rExp : Exp
 
-record GRuleT where
-  constructor GRule
+record GRule where
+  constructor GR
   rName : Name
   rcName : Name
   rcParams : Params
   rdParams : Params
   rExp : Exp
 
-rParams : GRuleT -> List Name
+rParams : GRule -> List Name
 rParams gRule = rcParams gRule ++ rdParams gRule
 
 Rule : Type
-Rule = Either FRuleT GRuleT
+Rule = Either FRule GRule
 
-data Program = MkProgram (List FRuleT) (List GRuleT)
+data Program = MkProgram (List FRule) (List GRule)
 
 data Task = MkTask Exp Program
 
@@ -97,12 +97,12 @@ mutual
     show (Call _ name args) = name ++ showArgs args
     show (Let e bindings) = "let " ++ showBindings bindings ++ " in " ++ show e
 
-implementation Show FRuleT where
-  show (FRule name params exp) =
+implementation Show FRule where
+  show (FR name params exp) =
     name ++ "(" ++ showParams params ++ ")=" ++ show exp ++ ";"
 
-implementation Show GRuleT where
-  show (GRule name cname cparams params expression) =
+implementation Show GRule where
+  show (GR name cname cparams params expression) =
     name ++ "(" ++ showPat cname cparams ++ showParamsTail params ++ ")="
         ++ show expression ++ ";"
 
@@ -119,8 +119,8 @@ implementation Show Task where
 
 implementation Eq CKind where
   (==) Ctr Ctr = True
-  (==) FCall FCall = True
-  (==) GCall GCall = True
+  (==) FC FC = True
+  (==) GC GC = True
   (==) _ _ = False
 
 implementation Eq Exp where

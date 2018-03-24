@@ -33,17 +33,17 @@ repeatedName [] = Nothing
 repeatedName (n :: names) =
   if n `elem` names then Just n else repeatedName names
 
-rnFRule : FRuleT -> Maybe Msg
+rnFRule : FRule -> Maybe Msg
 rnFRule fRule =
   do n <- repeatedName $ rParams fRule
      pure (n ++ " is repeated in the parameters of " ++ rName fRule)
 
-rnGRule : GRuleT -> Maybe Msg
+rnGRule : GRule -> Maybe Msg
 rnGRule gRule =
   do n <- repeatedName $ rParams gRule
      pure (n ++ " is repeated in the parameters of " ++ rName gRule)
 
-rcGRules : List GRuleT -> Name -> Maybe Msg
+rcGRules : List GRule -> Name -> Maybe Msg
 rcGRules gRules name =
   do c <- repeatedName $ [ rcName r | r <- gRules, name == rName r ]
      pure ("In the definition of " ++ name ++ ", " ++
@@ -51,7 +51,7 @@ rcGRules gRules name =
 
 -- A variable must be a parameter.
 
-pvFRule : FRuleT -> Maybe Msg
+pvFRule : FRule -> Maybe Msg
 pvFRule fRule =
   do let ps = fromList $ rParams fRule
      let vs = fromList $ vExp $ rExp fRule
@@ -61,7 +61,7 @@ pvFRule fRule =
                     u ++ " is not a parameter")
      Nothing
 
-pvGRule : GRuleT -> Maybe Msg
+pvGRule : GRule -> Maybe Msg
 pvGRule gRule =
   do let ps = fromList $ rParams gRule
      let vs = fromList $ vExp $ rExp gRule
@@ -75,7 +75,7 @@ pvGRule gRule =
 
 fExp : Exp -> List Name
 fExp (Var name) = []
-fExp (Call FCall name args) = name :: concatMap (assert_total fExp) args
+fExp (Call FC name args) = name :: concatMap (assert_total fExp) args
 fExp (Call _ _ args) = concatMap (assert_total fExp) args
 fExp (Let x xs) = idris_crash "fExp"
 
@@ -83,7 +83,7 @@ fExp (Let x xs) = idris_crash "fExp"
 -- and all calls to g-functions are marked as GCalls.
 -- So, we only need to check that there are rules for FCalls.
 
-uFRule : SortedSet Name -> FRuleT -> Maybe Msg
+uFRule : SortedSet Name -> FRule -> Maybe Msg
 uFRule fNames fRule =
   do let fs = fromList $ fExp $ rExp fRule
      let [] = SortedSet.toList (fs `difference` fNames)
@@ -92,7 +92,7 @@ uFRule fNames fRule =
                    ", there is a call to an undefined function " ++ f)
      Nothing
 
-uGRule : SortedSet Name -> GRuleT -> Maybe Msg
+uGRule : SortedSet Name -> GRule -> Maybe Msg
 uGRule fNames gRule =
   do let fs = fromList $ fExp $ rExp gRule
      let [] = SortedSet.toList (fs `difference` fNames)
@@ -153,7 +153,7 @@ mutual
        | msg => pure msg
        caArgs args
 
-caFRules : List FRuleT -> State ArMap (Maybe Msg)
+caFRules : List FRule -> State ArMap (Maybe Msg)
 caFRules [] =
   pure Nothing
 caFRules (fRule :: fRules) =
@@ -161,13 +161,13 @@ caFRules (fRule :: fRules) =
      | msg => pure msg
      caFRules fRules
 
-caGRule : GRuleT -> State ArMap (Maybe Msg)
-caGRule (GRule rName rcName rcParams rdParams rExp) =
+caGRule : GRule -> State ArMap (Maybe Msg)
+caGRule (GR rName rcName rcParams rdParams rExp) =
   do Nothing <- updAr rcName (length rcParams)
      | msg => pure msg
      caExp rExp
 
-caGRules : List GRuleT -> State ArMap (Maybe Msg)
+caGRules : List GRule -> State ArMap (Maybe Msg)
 caGRules [] =
   pure Nothing
 caGRules (gRule :: gRules) =
@@ -210,13 +210,13 @@ mutual
        | msg => pure msg
        haArgs args
 
-haFRule : FRuleT -> State ArMap (Maybe Msg)
-haFRule (FRule rName rParams rExp) =
+haFRule : FRule -> State ArMap (Maybe Msg)
+haFRule (FR rName rParams rExp) =
   do Nothing <- updAr rName (length rParams)
      | msg => pure msg
      haExp rExp
 
-haFRules : List FRuleT -> State ArMap (Maybe Msg)
+haFRules : List FRule -> State ArMap (Maybe Msg)
 haFRules [] =
   pure Nothing
 haFRules (fRule :: fRules) =
@@ -224,13 +224,13 @@ haFRules (fRule :: fRules) =
      | msg => pure msg
      haFRules fRules
 
-haGRule : GRuleT -> State ArMap (Maybe Msg)
-haGRule (GRule rName rcName rcParams rdParams rExp) =
+haGRule : GRule -> State ArMap (Maybe Msg)
+haGRule (GR rName rcName rcParams rdParams rExp) =
   do Nothing <- updAr rName (S $ length rdParams)
      | msg => pure msg
      haExp rExp
 
-haGRules : List GRuleT -> State ArMap (Maybe Msg)
+haGRules : List GRule -> State ArMap (Maybe Msg)
 haGRules [] =
   pure Nothing
 haGRules (gRule :: gRules) =

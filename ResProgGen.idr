@@ -28,7 +28,7 @@ Sigs : Type
 Sigs = SortedMap Nat Sig
 
 SigsRules : Type
-SigsRules = (Sigs, List FRuleT, List GRuleT)
+SigsRules = (Sigs, List FRule, List GRule)
 
 isVarTest : Tree -> Node -> Bool
 isVarTest tree (b@(MkNode _ _ _ _ (bChId :: _) _)) =
@@ -51,13 +51,13 @@ getFGSig tree nId name vs =
        Just sig' =>
          pure sig'         
 
-putFRules : List FRuleT -> State SigsRules ()
+putFRules : List FRule -> State SigsRules ()
 putFRules newRules =
   do (sigs, fRules, gRules) <- get
      let fRules' = fRules ++ newRules
      put (sigs, fRules', gRules)
 
-putGRules : List GRuleT -> State SigsRules ()
+putGRules : List GRule -> State SigsRules ()
 putGRules newRules =
   do (sigs, fRules, gRules) <- get
      let gRules' = gRules ++ newRules
@@ -78,9 +78,9 @@ mutual
       Call Ctr cname _ =>
         do es <- genResExps tree fIds bChIds
            pure $ Call Ctr cname es
-      Call FCall name args =>
+      Call FC name args =>
         genResCall tree fIds b name args
-      Call GCall name args =>
+      Call GC name args =>
         genResCall tree fIds b name args
       Let _ bs =>
         do let chNode = getNode tree (hd bChIds)
@@ -98,9 +98,9 @@ mutual
        let aChNode = getNode tree aChId
        case nodeContr aChNode of
          Nothing =>
-           pure $ applySubst subst (Call FCall name args)
+           pure $ applySubst subst (Call FC name args)
          Just _ =>
-           pure $ applySubst subst (Call GCall name args)
+           pure $ applySubst subst (Call GC name args)
 
   genResExps : Tree -> List NodeId -> List NodeId ->
                     State SigsRules (List Exp)
@@ -117,17 +117,17 @@ mutual
          bodies <- genResExps tree fId bChIds
          let contrs = getChContr tree bChIds
          let gRules =
-               [ GRule name' cname' cparams' (tl params) body' |
+               [ GR name' cname' cparams' (tl params) body' |
                   ((cname', cparams'), body') <- contrs `zip` bodies]
          putGRules gRules
-         pure $ Call GCall name' (map Var params)
+         pure $ Call GC name' (map Var params)
     else if isFuncNode fId bId then
       do (sigs, rules) <- get
          (name', params') <- getFGSig tree bId name params
          let bChNode = getNode tree (hd bChIds)
          body' <- genResExp tree fId bChNode
-         putFRules [ FRule name' params' body']
-         pure $ Call FCall name' (map Var params)
+         putFRules [ FR name' params' body']
+         pure $ Call FC name' (map Var params)
     else
       let bChNode = getNode tree (hd bChIds) in
       genResExp tree fId bChNode

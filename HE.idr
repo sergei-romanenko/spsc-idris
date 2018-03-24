@@ -27,7 +27,7 @@ mutual
 
 export
 aVarIsUnderAttack : Exp -> Bool
-aVarIsUnderAttack (Call GCall _ (arg :: args)) =
+aVarIsUnderAttack (Call GC _ (arg :: args)) =
   aVarIsUnderAttack arg
 aVarIsUnderAttack (Var _) = True
 aVarIsUnderAttack _ = False

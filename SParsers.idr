@@ -126,11 +126,11 @@ mutual
     | RCtr Name RArgs
     | RCall Name RArgs
 
-data RFRuleT = RFRule Name Params RExp
-data RGRuleT = RGRule Name Name Params Params RExp
+data RFRule = RFR Name Params RExp
+data RGRule = RGR Name Name Params Params RExp
 
 RRule : Type
-RRule = Either RFRuleT RGRuleT
+RRule = Either RFRule RGRule
 
 data RProgram = MkRProgram (List RRule)
 
@@ -173,7 +173,7 @@ fRule =
      symbol "="
      ruleRhs <- expression
      symbol ";"
-     pure $ Left $ RFRule functionName paramList ruleRhs
+     pure $ Left $ RFR functionName paramList ruleRhs
 
 gRule : Grammar SLLToken True RRule
 gRule =
@@ -186,7 +186,7 @@ gRule =
      symbol ")"; symbol "="
      ruleRhs <- expression
      symbol ";"
-     pure $ Right $ RGRule functionName cname cparamList paramList ruleRhs
+     pure $ Right $ RGR functionName cname cparamList paramList ruleRhs
 
 rule : Grammar SLLToken True RRule
 rule = fRule <|> gRule
@@ -223,16 +223,16 @@ toExp isGName (RVar name) = Var name
 toExp isGName (RCtr name args) =
   Call Ctr name (map (toExp isGName) args)
 toExp isGName (RCall name args) =
-  Call (if isGName name then GCall else FCall)
+  Call (if isGName name then GC else FC)
         name (map (toExp isGName) args)
 
-toFRule : (isGName : Name -> Bool) -> RFRuleT -> FRuleT
-toFRule isGName (RFRule name params e) =
-  FRule name params (toExp isGName e)
+toFRule : (isGName : Name -> Bool) -> RFRule -> FRule
+toFRule isGName (RFR name params e) =
+  FR name params (toExp isGName e)
 
-toGRule : (isGName : Name -> Bool) -> RGRuleT -> GRuleT
-toGRule isGName (RGRule name cname cparams params e) =
-  GRule name cname cparams params (toExp isGName e)
+toGRule : (isGName : Name -> Bool) -> RGRule -> GRule
+toGRule isGName (RGR name cname cparams params e) =
+  GR name cname cparams params (toExp isGName e)
 
 toRule : (isGName : Name -> Bool) -> RRule -> Rule
 toRule isGName = either (Left . toFRule isGName) (Right . toGRule isGName)
@@ -245,7 +245,7 @@ toProgram isGName (MkRProgram rules) =
 -- Separating f-functions from g-functions.
 
 getGNames : List RRule -> List Name
-getGNames = map (\(RGRule name _ _ _ _) => name) . rights
+getGNames = map (\(RGR name _ _ _ _) => name) . rights
 
 isGNameInProg : RProgram -> Name -> Bool
 isGNameInProg (MkRProgram rules) =

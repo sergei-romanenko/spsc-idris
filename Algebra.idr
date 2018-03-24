@@ -75,8 +75,8 @@ vars (Let e bs) = []
 -- Function calls
 
 isFGCall : Exp -> Bool
-isFGCall (Call FCall _ _) = True
-isFGCall (Call GCall _ _) = True
+isFGCall (Call FC _ _) = True
+isFGCall (Call GC _ _) = True
 isFGCall _ = False 
 
 -- Fresh names

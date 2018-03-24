@@ -27,7 +27,7 @@ lookupGC (MkProgram fRules gRules) name cname =
 lookupG : Program -> Name -> List (Name, Params, Params, Exp)
 lookupG (MkProgram fRules gRules) name =
   [ (cname, cparams, params, body) |
-    GRule name' cname cparams params body <- gRules,
+    GR name' cname cparams params body <- gRules,
     name == name' ]
 
 -- Driving
@@ -40,23 +40,23 @@ mutual
     case e of
       Call Ctr name args =>
         pure $ [ (arg, Nothing) | arg <- args  ]
-      Call FCall name args =>
+      Call FC name args =>
         let (params, body) = lookupF prog name
             p2a = the Subst $ fromList (params `zip` args)
             body' = applySubst p2a body
         in pure $ [(body', Nothing)]
-      Call GCall name (Call Ctr cname cargs :: args) =>
+      Call GC name (Call Ctr cname cargs :: args) =>
         let (cparams, params, body) = lookupGC prog name cname
             pa = (cparams `zip` cargs) ++ (params `zip` args)
             subst = the Subst $ fromList pa
             body' = applySubst subst body
         in pure $ [(body', Nothing)]
-      Call GCall name (Var vname :: args) =>
+      Call GC name (Var vname :: args) =>
         for (lookupG prog name) (\(cname, cparams, params, _) =>
                  driveBranch prog e vname cname cparams params)
-      Call GCall name (arg0 :: args) =>
+      Call GC name (arg0 :: args) =>
         do branches <- drivingStep prog arg0
-           pure $ [ (Call GCall name (e' :: args), c) | (e', c) <- branches]
+           pure $ [ (Call GC name (e' :: args), c) | (e', c) <- branches]
       _ => idris_crash "drivingStep: unexpected case"
 
   driveBranch : Program -> Exp -> Name -> Name -> Params -> Params ->
