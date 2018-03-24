@@ -13,7 +13,7 @@ docProgram (MkProgram fRules gRules) =
 
 docTask : Task -> Doc
 docTask (MkTask exp prog) =
-  (text . show) exp |$| text "where" |+| line |$| docProgram prog
+  (text . show) exp |$| text "where" |+| line |$| docProgram prog |+| line
 
 export
 ppTask : Task -> String
@@ -24,6 +24,10 @@ mutual
 
   docTree : Tree -> NodeId -> Doc
   docTree tree nId =
+    docTree' tree nId |+| line
+
+  docTree' : Tree -> NodeId -> Doc
+  docTree' tree nId =
     let MkNode _ exp contr parent children back = getNode tree nId in
     docContr contr |+|
     text (cast nId) |+| text " : " |+| text (show exp) |+|
@@ -40,7 +44,7 @@ mutual
   docChildren : Tree -> List NodeId -> Doc
   docChildren tree [] = empty
   docChildren tree (nId :: nIds) =
-    line |+| line |+| docTree tree nId |+| docChildren tree nIds
+    line |+| line |+| docTree' tree nId |+| docChildren tree nIds
 
 export
 ppTree : Tree -> String

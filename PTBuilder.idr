@@ -32,6 +32,13 @@ lookupG (MkProgram fRules gRules) name =
 
 -- Driving
 
+applyContr : Maybe Contraction -> Exp -> Exp
+applyContr Nothing e = e
+applyContr (Just (MkContraction vname cname cparams)) e =
+  let cargs = map Var cparams
+      vname2ctr = insert vname (Call Ctr cname cargs) empty
+  in applySubst vname2ctr e
+
 mutual
 
   export
@@ -56,7 +63,8 @@ mutual
                  driveBranch prog e vname cname cparams params)
       Call GC name (arg0 :: args) =>
         do branches <- drivingStep prog arg0
-           pure $ [ (Call GC name (e' :: args), c) | (e', c) <- branches]
+           pure $ [ (Call GC name (e' :: (map (applyContr c) args)), c)
+                    | (e', c) <- branches]
       _ => idris_crash "drivingStep: unexpected case"
 
   driveBranch : Program -> Exp -> Name -> Name -> Params -> Params ->
@@ -64,10 +72,9 @@ mutual
   driveBranch prog e vname cname cparams params =
     do cparams' <- freshNameList (length cparams)
        let cargs = map Var cparams'
-       let vname2ctr = insert vname (Call Ctr cname cargs) empty
-       let e' = applySubst vname2ctr e
-       [(e'', Nothing)] <- drivingStep prog e'
-       pure $ (e'', Just $ MkContraction vname cname cparams')
+       let c = Just $ MkContraction vname cname cparams'
+       [(e', Nothing)] <- drivingStep prog (applyContr c e)
+       pure $ (e', c)
 
 ---- The parts common to the basic and advanced tree builders.
 
@@ -79,7 +86,9 @@ isMoreGeneral beta alpha =
 
 findAMoreGeneralAncestor : Tree -> Node -> Maybe Node
 findAMoreGeneralAncestor tree beta =
-  findAncestor (isMoreGeneral beta) tree beta
+  if aVarIsUnderAttack (nodeExp beta)
+  then findGlobalAncestor (isMoreGeneral beta) tree beta
+  else findLocalAncestor (isMoreGeneral beta) tree beta
 
 export
 findAnUnprocessedNode : Tree -> Maybe Node
@@ -195,7 +204,9 @@ isEmbeddedAncestor beta alpha =
 
 findAnEmbeddedAncestor : Tree -> Node -> Maybe Node
 findAnEmbeddedAncestor tree beta =
-  findAncestor (isEmbeddedAncestor beta) tree beta
+  if aVarIsUnderAttack (nodeExp beta)
+  then findGlobalAncestor (isEmbeddedAncestor beta) tree beta
+  else findLocalAncestor (isEmbeddedAncestor beta) tree beta
 
 export
 advancedBuildStep : BuildStep

@@ -11,6 +11,37 @@ import PTBuilder
 
 --
 
+vaTrue : String -> IO Bool
+vaTrue input =
+  assertEquals (aVarIsUnderAttack <$> parseExp input) (Just True)
+
+vaFalse : String -> IO Bool
+vaFalse input =
+  assertEquals (aVarIsUnderAttack <$> parseExp input) (Just False)
+
+va_x : IO Bool
+va_x = vaTrue "x"
+
+va_A : IO Bool
+va_A = vaFalse "A"
+
+va_fx : IO Bool
+va_fx = vaFalse "f(x)"
+
+va_gxy : IO Bool
+va_gxy = vaTrue "g(x,y)"
+
+va_g1g2x : IO Bool
+va_g1g2x = vaTrue "g1(g2(x))"
+
+va_gA : IO Bool
+va_gA = vaFalse "g(A())"
+
+va_gfx : IO Bool
+va_gfx = vaFalse "g(f(x))"
+
+--
+
 runDrStep : Program -> Exp -> List Branch
 runDrStep prog e =
   (evalState $ prog `drivingStep` e) 100
@@ -174,7 +205,15 @@ testAAddAdd = testAB1 pAdd "gAdd(gAdd(a,b),c)"
 export
 allTests : IO ()
 allTests = runTests
-  [ testCtr
+  [ va_x
+  , va_A
+  , va_fx
+  , va_gxy
+  , va_g1g2x
+  , va_gA
+  , va_gfx
+
+  , testCtr
   , testFCall
   , testFCall2
   , testGCallCtr

@@ -76,6 +76,20 @@ ancestors tree node =
     Just parentNode =>
       parentNode :: ancestors tree parentNode
 
+-- We distinguish a specific category of expressions:
+-- the ones that generate contractions in the process tree.
+
+-- This is used to distiguish "global" and "local" contrlol:
+-- expressions are compared only if they belong
+-- to the same category (as defined by `aVarIsUnderAttack`).
+
+export
+aVarIsUnderAttack : Exp -> Bool
+aVarIsUnderAttack (Call GC _ (arg :: args)) =
+  aVarIsUnderAttack arg
+aVarIsUnderAttack (Var _) = True
+aVarIsUnderAttack _ = False
+
 findAncestor : (Node -> Bool) -> Tree -> Node -> Maybe Node
 findAncestor p tree node =
   case getParent tree node of
@@ -87,6 +101,26 @@ findAncestor p tree node =
 findFuncAncestor : Tree -> Node -> Maybe Node
 findFuncAncestor tree node =
   findAncestor (\node' => nodeExp node `equiv` nodeExp node') tree node
+
+findLocalAncestor : (Node -> Bool) -> Tree -> Node -> Maybe Node
+findLocalAncestor p tree node = do
+  case getParent tree node of
+    Nothing => Nothing
+    Just parentNode =>
+      if aVarIsUnderAttack (nodeExp parentNode)
+      then Nothing
+      else if p parentNode
+      then Just parentNode
+      else findLocalAncestor p tree parentNode
+
+findGlobalAncestor : (Node -> Bool) -> Tree -> Node -> Maybe Node
+findGlobalAncestor p tree node =
+  case getParent tree node of
+    Nothing => Nothing
+    Just parentNode =>
+      if aVarIsUnderAttack (nodeExp parentNode) && p parentNode
+      then Just parentNode
+      else findGlobalAncestor p tree parentNode
 
 funcNodeIds : Tree -> List NodeId
 funcNodeIds tree =
