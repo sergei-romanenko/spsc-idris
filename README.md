@@ -13,7 +13,7 @@ idris --build spsc_idris.ipkg
 To run a sample task `name`, go to the subdirectory `tasks` and
 execute
 ```
-spsc_idris name
+../spsc_idris name
 ```
 
 SPSC will read the file `name.task` and write the supercompiled
