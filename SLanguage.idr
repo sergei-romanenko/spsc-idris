@@ -99,11 +99,11 @@ mutual
 
 implementation Show FRule where
   show (FR name params exp) =
-    name ++ "(" ++ showParams params ++ ")=" ++ show exp ++ ";"
+    name ++ "(" ++ showParams params ++ ") = " ++ show exp ++ ";"
 
 implementation Show GRule where
   show (GR name cname cparams params expression) =
-    name ++ "(" ++ showPat cname cparams ++ showParamsTail params ++ ")="
+    name ++ "(" ++ showPat cname cparams ++ showParamsTail params ++ ") = "
         ++ show expression ++ ";"
 
 implementation Show Program where

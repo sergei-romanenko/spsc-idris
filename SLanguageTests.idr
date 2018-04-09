@@ -23,10 +23,10 @@ Test102Let =
 
 Test103Rule : IO Bool
 Test103Rule =
-  do shEq (FR "f" ["x", "y"] (Var "y")) "f(x,y)=y;"
-     shEq (GR "g" "C" ["x"] ["y"] (Var "y")) "g(C(x),y)=y;"
-     shEq (GR "g" "C" [] ["y"] (Var "y")) "g(C,y)=y;"
-     shEq (GR "g" "C" [] [] (Call Ctr "C" []))   "g(C)=C;"
+  do shEq (FR "f" ["x", "y"] (Var "y")) "f(x,y) = y;"
+     shEq (GR "g" "C" ["x"] ["y"] (Var "y")) "g(C(x),y) = y;"
+     shEq (GR "g" "C" [] ["y"] (Var "y")) "g(C,y) = y;"
+     shEq (GR "g" "C" [] [] (Call Ctr "C" [])) "g(C) = C;"
 
 Test104Program : IO Bool
 Test104Program =
@@ -34,13 +34,13 @@ Test104Program =
             [ FR "f" [] (Call Ctr "A" [])
             , FR "f1" [] (Call Ctr "A1" [])]
             [])
-          "f()=A;f1()=A1;"
+          "f() = A;f1() = A1;"
      shEq (MkProgram
             []
             [ GR"g" "C" [] [] (Call Ctr "A" [])
             , GR "g1" "C" [] ["x"] (Call Ctr "A" [])
             , GR "g2" "C" ["x"] [] (Call Ctr "A" [])])
-          "g(C)=A;g1(C,x)=A;g2(C(x))=A;"
+          "g(C) = A;g1(C,x) = A;g2(C(x)) = A;"
 
 Test201Eq : IO Bool
 Test201Eq =

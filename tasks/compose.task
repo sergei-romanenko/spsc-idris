@@ -8,5 +8,9 @@
 
 b(a(u))
 where
+
+a(Stop) = Stop;
 a(A(x)) = B(a(x));
+
+b(Stop) = Stop;
 b(B(x)) = C(b(x));
