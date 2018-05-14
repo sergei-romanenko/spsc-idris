@@ -40,7 +40,7 @@ mutual
     char '{' |+|
     text vname |+| text " = " |+| text (showPat cname cparams) |+|
     char '}' |+| line
-  
+
   docChildren : Tree -> List NodeId -> Doc
   docChildren tree [] = empty
   docChildren tree (nId :: nIds) =

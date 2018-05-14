@@ -139,7 +139,7 @@ mutual
   caExp (Call Ctr name args) =
     do Nothing <- updAr name (length args)
        | msg => pure msg
-       pure Nothing
+       caArgs args
   caExp (Call _ name args) =
     caArgs args
   caExp (Let exp bindings) =

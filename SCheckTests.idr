@@ -75,6 +75,11 @@ testArCG = chTask (MkTask (Var "a") $ MkProgram
   [] [ GR "g" "C" ["x"] [] (Call Ctr "C" []) ])
   "C has inconsistent arity: 0 and 1"
 
+testArCA : IO Bool
+testArCA = chTask (MkTask (Var "a") $ MkProgram
+  [ FR "f" [] (Call Ctr "C" [Call Ctr "C" []]) ] [])
+  "C has inconsistent arity: 0 and 1"
+
 testArHF1 : IO Bool
 testArHF1 = chTask (MkTask (Call FC "f" []) $ MkProgram
   [ FR "f" ["x"] (Var "x") ] [])
@@ -105,6 +110,7 @@ allTests = runTests
   , testUGF
   , testArCF
   , testArCG
+  , testArCA
   , testArHF1
   , testArHF2
   , testArHG1
