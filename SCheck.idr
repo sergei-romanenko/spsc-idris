@@ -198,7 +198,7 @@ mutual
   haExp (Call _ name args) =
     do Nothing <- updAr name (length args)
        | msg => pure msg
-       pure Nothing
+       haArgs args
   haExp (Let exp bindings) =
     idris_crash "haExp"
 
