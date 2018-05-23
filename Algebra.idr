@@ -1,6 +1,7 @@
 module Algebra
 
 import Data.SortedMap
+import Data.SortedSet
 import Control.Monad.State
 
 import SLanguage
@@ -64,6 +65,13 @@ instOf e' e =
 equiv : Exp -> Exp -> Bool
 equiv e1 e2 = (e1 `instOf` e2) && (e2 `instOf` e1)
 
+-- Function calls
+
+isFGCall : Exp -> Bool
+isFGCall (Call FC _ _) = True
+isFGCall (Call GC _ _) = True
+isFGCall _ = False
+
 -- Free variables
 
 vars : Exp -> List Name
@@ -72,26 +80,49 @@ vars (Call _ _ args) =
   foldl union [] (assert_total $ map vars args)
 vars (Let e bs) = []
 
--- Function calls
+-- Names appearing in the task
 
-isFGCall : Exp -> Bool
-isFGCall (Call FC _ _) = True
-isFGCall (Call GC _ _) = True
-isFGCall _ = False 
+expNames : Exp -> SortedSet Name
+expNames (Var name) = insert name empty
+expNames (Call ckind name args) =
+  foldl union (insert name empty) (map (assert_total expNames) args)
+expNames (Let e bs) =
+  foldl union (expNames e `union` fromList (map fst bs))
+              (map (assert_total expNames . snd) bs)
+
+fRuleNames : FRule -> SortedSet Name
+fRuleNames (FR name params e) =
+  fromList (name :: params) `union` expNames e
+
+gRuleNames : GRule -> SortedSet Name
+gRuleNames (GR name cName cParams dParams e) =
+  fromList (name :: cName :: cParams ++ dParams) `union` expNames e
+
+total
+taskNames : Task -> SortedSet Name
+taskNames (MkTask e (MkProgram fRules gRules)) =
+  foldl union (expNames e) (map fRuleNames fRules ++ map gRuleNames gRules)
 
 -- Fresh names
 
-mkName : Nat -> String
-mkName k = "v" ++ show k
+NameGen : Type
+NameGen = (Nat, SortedSet Name, Nat)
 
-freshName : State Nat Name
-freshName =
-  do k <- get 
-     put $ S k
-     pure $ mkName k
+freshName : String -> State NameGen Name
+freshName prefix =
+  do (fId, ns, k) <- get
+     let name = prefix ++ show k
+     if contains name ns then
+       do put $ (fId, ns, S k)
+          assert_total $ freshName prefix
+     else
+       do put $ (fId, SortedSet.insert name ns, S k)
+          pure $ name
 
-freshNameList : Nat -> State Nat (List Name)
-freshNameList n =
-  do k <- get
-     put $ n + k
-     pure $ if n == Z then [] else map mkName [k .. pred (k + n)]
+freshNameList : Nat -> State NameGen (List Name)
+freshNameList n = case n of
+  Z => pure $ []
+  S n' =>
+     do name <- freshName "v"
+        nameList <- freshNameList n'
+        pure $ name :: nameList

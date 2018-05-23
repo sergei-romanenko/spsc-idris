@@ -1,6 +1,7 @@
 module PTBuilder
 
 import Data.SortedMap
+import Data.SortedSet
 import Control.Monad.State
 
 import SLanguage
@@ -42,7 +43,7 @@ applyContr (Just (MkContraction vname cname cparams)) e =
 mutual
 
   export
-  drivingStep : Program -> Exp -> State Nat (List Branch)
+  drivingStep : Program -> Exp -> State NameGen (List Branch)
   drivingStep prog e =
     case e of
       Call Ctr name args =>
@@ -68,7 +69,7 @@ mutual
       _ => idris_crash "drivingStep: unexpected case"
 
   driveBranch : Program -> Exp -> Name -> Name -> Params -> Params ->
-                State Nat Branch
+                State NameGen Branch
   driveBranch prog e vname cname cparams params =
     do cparams' <- freshNameList (length cparams)
        let cargs = map Var cparams'
@@ -101,11 +102,11 @@ findAnUnprocessedNode tree =
 
 public export
 BuildStep : Type
-BuildStep = Program -> Tree -> Node -> State Nat Tree
+BuildStep = Program -> Tree -> Node -> State NameGen Tree
 
 public export
 BuildLoop : Type
-BuildLoop = BuildStep -> Program -> Tree -> State Nat Tree
+BuildLoop = BuildStep -> Program -> Tree -> State NameGen Tree
 
 public export
 TreeBuilder : Type
@@ -125,13 +126,14 @@ initTree e = insert 0 (MkNode 0 e Nothing Nothing [] Nothing) empty
 export
 mkTreeBuilder : BuildLoop -> BuildStep -> TreeBuilder
 mkTreeBuilder loop step prog e =
-  (evalState $ loop step prog (initTree e)) 10000
+  let reserved = taskNames(MkTask e prog) in
+  (evalState $ loop step prog (initTree e)) (1, reserved, 1)
 
 -- This function replaces the expression in a node with
 -- a let-expression, and then adds childe nodes.
 -- Thus, a let-node cannot be a leaf.
 
-decomposeNode : Tree -> NodeId -> Exp -> Bindings -> State Nat Tree
+decomposeNode : Tree -> NodeId -> Exp -> Bindings -> State NameGen Tree
 decomposeNode tree nId e bindings =
   do let branches = (e, Nothing) ::
            [ (exp, Nothing) | (name, exp) <- bindings ]
@@ -142,7 +144,7 @@ decomposeNode tree nId e bindings =
 -- a let-expression, in order to make beta the same as alpha
 -- (modulo variable names).
 
-generalizeNode : Program -> Tree -> Node -> Node -> State Nat Tree
+generalizeNode : Program -> Tree -> Node -> Node -> State NameGen Tree
 generalizeNode prog tree beta@(MkNode bId eB _ _ _ _)
                          alpha@(MkNode _ eA _ _ _ _) =
   do let Just subst = matchAgainst eA eB
@@ -152,7 +154,7 @@ generalizeNode prog tree beta@(MkNode bId eB _ _ _ _)
 -- This function applies a driving step to the node's expression,
 -- and, in general, adds children to the node.
 
-driveNode : Program -> Tree -> Node -> State Nat Tree
+driveNode : Program -> Tree -> Node -> State NameGen Tree
 driveNode prog tree beta@(MkNode bId eB _ _ _ _) =
   do branches <- drivingStep prog eB
      addChildren tree bId branches
@@ -175,20 +177,20 @@ basicBuilder : TreeBuilder
 basicBuilder prog e =
   mkTreeBuilder buildLoop basicBuildStep prog e
 
----- Advanced tree builder with homeomorphic imbedding and generalization  
+---- Advanced tree builder with homeomorphic imbedding and generalization
 
-abstract : Tree -> Node -> Exp -> Subst -> State Nat Tree
+abstract : Tree -> Node -> Exp -> Subst -> State NameGen Tree
 abstract tree alpha@(MkNode aId eA _ _ _ _) e subst =
   decomposeNode tree aId e (toList subst)
 
-split : Tree -> Node -> State Nat Tree
+split : Tree -> Node -> State NameGen Tree
 split tree b@(MkNode nId e@(Call kind name args) c p chIds back) =
   do names' <- freshNameList (length args)
      let e = Call kind name (map Var names')
      let bindings = names' `zip` args
      decomposeNode tree nId e bindings
 
-generalizeAlphaOrSplit : Tree -> Node -> Node -> State Nat Tree
+generalizeAlphaOrSplit : Tree -> Node -> Node -> State NameGen Tree
 generalizeAlphaOrSplit tree beta@(MkNode _ eB _ _ _ _)
                             alpha@(MkNode _ eA _ _ _ _) =
   do MkGen e aSubst bSubst <- msg eA eB

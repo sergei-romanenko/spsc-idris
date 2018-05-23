@@ -1,6 +1,7 @@
 module PTBuilderTests
 
 import Data.SortedMap
+import Data.SortedSet
 import Control.Monad.State
 import Test.Unit
 
@@ -44,7 +45,7 @@ va_gfx = vaFalse "g(f(x))"
 
 runDrStep : Program -> Exp -> List Branch
 runDrStep prog e =
-  (evalState $ prog `drivingStep` e) 100
+  (evalState $ prog `drivingStep` e) (1, SortedSet.empty, 100)
 
 evDrStep : String -> String -> Maybe String
 evDrStep givenProg givenExp =
@@ -158,15 +159,15 @@ testPrTrVar = testBB "" "x"
 
 testPrTrCtr : IO Bool
 testPrTrCtr = testBB "" "S(Z)"
-  "[{0^_: S(Z) @[10000]}, {10000^0: Z}]"
+  "[{0^_: S(Z) @[1]}, {1^0: Z}]"  
 
 testFromGeneral : IO Bool
 testFromGeneral = testBB "f(x)=f(S(x));" "f(a)"
-  "[{0^_: f(a) @[10000]}, {10000^0: let a=S(a) in f(a) @[10001, 10002]}, {10001^10000^^0: f(a)}, {10002^10000: S(a) @[10003]}, {10003^10002: a}]"
+  "[{0^_: f(a) @[1]}, {1^0: let a=S(a) in f(a) @[2, 3]}, {2^1^^0: f(a)}, {3^1: S(a) @[4]}, {4^3: a}]"  
 
 testAdd1_0 : IO Bool
 testAdd1_0 = testBB pAddAcc "gAddAcc(S(Z), Z)"
-  "[{0^_: gAddAcc(S(Z),Z) @[10000]}, {10000^0: gAddAcc(Z,S(Z)) @[10001]}, {10001^10000: S(Z) @[10002]}, {10002^10001: Z}]"
+  "[{0^_: gAddAcc(S(Z),Z) @[1]}, {1^0: gAddAcc(Z,S(Z)) @[2]}, {2^1: S(Z) @[3]}, {3^2: Z}]"  
 
 -- Advanced builder
 
@@ -176,31 +177,31 @@ testAPTVar = testAB1 "" "x"
 
 testAPFCall : IO Bool
 testAPFCall = testAB1 "f(x)=f(S(x));" "f(a)"
-  "[{0^_: f(a) @[10000]}, {10000^0: f(S(a))}]"
+  "[{0^_: f(a) @[1]}, {1^0: f(S(a))}]"
 
 testAPTCtr : IO Bool
 testAPTCtr = testAB1 "" "S(Z)"
-  "[{0^_: S(Z) @[10000]}, {10000^0: Z}]"
+  "[{0^_: S(Z) @[1]}, {1^0: Z}]"
 
 testAFromGeneral : IO Bool
 testAFromGeneral = testAB "f(x)=f(S(x));" "f(a)"
-  "[{0^_: f(a) @[10000]}, {10000^0: let a=S(a) in f(a) @[10001, 10002]}, {10001^10000^^0: f(a)}, {10002^10000: S(a) @[10003]}, {10003^10002: a}]"
+  "[{0^_: f(a) @[1]}, {1^0: let a=S(a) in f(a) @[2, 3]}, {2^1^^0: f(a)}, {3^1: S(a) @[4]}, {4^3: a}]"
 
 testAFromEmb : IO Bool
 testAFromEmb = testAB "f(x) = g(f(x));g(A) = B;" "f(a)"
-  "[{0^_: f(a) @[10000]}, {10000^0: let v10002=f(a) in g(v10002) @[10003, 10004]}, {10003^10000: g(v10002) @[10005]}, {10004^10000^^0: f(a)}, {10005^10003: B ?v10002 = A}]"
+  "[{0^_: f(a) @[1]}, {1^0: let v2=f(a) in g(v2) @[2, 3]}, {2^1: g(v2) @[4]}, {3^1^^0: f(a)}, {4^2: B ?v2 = A}]"
 
 testAAdd1_0 : IO Bool
 testAAdd1_0 = testAB1 pAddAcc "gAddAcc(S(Z), Z)"
-  "[{0^_: gAddAcc(S(Z),Z) @[10000]}, {10000^0: gAddAcc(Z,S(Z))}]"
+  "[{0^_: gAddAcc(S(Z),Z) @[1]}, {1^0: gAddAcc(Z,S(Z))}]"
 
 testAAddAB : IO Bool
 testAAddAB = testAB1 pAdd "gAdd(a, b)"
-  "[{0^_: gAdd(a,b) @[10001, 10002]}, {10001^0: b ?a = Z}, {10002^0: S(gAdd(v10000,b)) ?a = S(v10000)}]"
+  "[{0^_: gAdd(a,b) @[1, 2]}, {1^0: b ?a = Z}, {2^0: S(gAdd(v1,b)) ?a = S(v1)}]"
 
 testAAddAdd : IO Bool
 testAAddAdd = testAB1 pAdd "gAdd(gAdd(a,b),c)"
-  "[{0^_: gAdd(gAdd(a,b),c) @[10001, 10002]}, {10001^0: gAdd(b,c) ?a = Z}, {10002^0: gAdd(S(gAdd(v10000,b)),c) ?a = S(v10000)}]"
+  "[{0^_: gAdd(gAdd(a,b),c) @[1, 2]}, {1^0: gAdd(b,c) ?a = Z}, {2^0: gAdd(S(gAdd(v1,b)),c) ?a = S(v1)}]"
 
 export
 allTests : IO ()

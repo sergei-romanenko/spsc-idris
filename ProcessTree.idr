@@ -1,6 +1,7 @@
 module ProcessTree
 
 import Data.SortedMap
+import Data.SortedSet
 import Control.Monad.State
 
 import SLanguage
@@ -15,7 +16,7 @@ data Contraction = MkContraction Name Name Params
 
 implementation Show Contraction where
   show (MkContraction vname cname cparams) =
-    vname ++ " = " ++ showPat cname cparams 
+    vname ++ " = " ++ showPat cname cparams
 
 Branch : Type
 Branch = (Exp, Maybe Contraction)
@@ -151,19 +152,19 @@ replaceSubtree tree nId e' =
       tree' = foldl deleteSubtree tree chIds
   in insert nId (MkNode nId e' c p [] back) tree'
 
-freshNodeId : State Nat NodeId
+freshNodeId : State NameGen NodeId
 freshNodeId =
-  do k <- get
-     put $ S k
+  do (fId, ns, k) <- get
+     put $ (S fId, ns, k)
      pure $ k
 
-freshNodeIdList : Nat -> State Nat (List Nat)
+freshNodeIdList : Nat -> State NameGen (List Nat)
 freshNodeIdList n =
-  do k <- get
-     put $ n + k
-     pure $ [k .. pred (n + k)]
+  do (fId, ns, k) <- get
+     put $ (n + fId, ns, k)
+     pure $ [fId .. pred (n + fId)]
 
-addChildren : Tree -> NodeId -> List Branch -> State Nat Tree
+addChildren : Tree -> NodeId -> List Branch -> State NameGen Tree
 addChildren tree nId branches =
   let MkNode _ e c p chIds back = getNode tree nId in
   do chIds' <- freshNodeIdList (length branches)
@@ -171,4 +172,4 @@ addChildren tree nId branches =
      let chNodes = [ MkNode nId' e' c' (Just nId) [] Nothing |
                        (nId', (e', c')) <- chIds' `zip` branches]
      let tree'' = insertFrom (chIds' `zip` chNodes) tree'
-     pure $ tree'' 
+     pure $ tree''

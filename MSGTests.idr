@@ -1,5 +1,6 @@
 module MSGTests
 
+import Data.SortedSet
 import Control.Monad.State
 import Test.Unit
 
@@ -11,7 +12,7 @@ evMSG : String -> String -> Maybe String
 evMSG g1 g2 =
   do e1 <- parseExp g1
      e2 <- parseExp g2
-     pure $ show $ (evalState $ msg e1 e2) 10000
+     pure $ show $ (evalState $ msg e1 e2) (1, SortedSet.empty, 10000)
 
 testMSG : String -> String -> String -> IO Bool
 testMSG g1 g2 expected =

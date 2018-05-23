@@ -21,7 +21,7 @@ implementation Show Gen where
     show (MkGen e subst1 subst2) =
       show e ++ " =>> "
         ++ "{" ++ showBindings (toList subst1) ++ "}"
-        ++ "{" ++ showBindings (toList subst2) ++ "}" 
+        ++ "{" ++ showBindings (toList subst2) ++ "}"
 
 mergeableKeyPairs : (Ord t, Eq a) => (m1, m2 : SortedMap t a) -> List (t, t)
 mergeableKeyPairs m1 m2 =
@@ -43,7 +43,7 @@ mergeableFunctors u@(MkGen e m1 m2) =
   [(k, e1) | (k, e1) <- toList m1,
              let Just e2 = lookup k m2, theSameFunctor e1 e2]
 
-commonFunctor : Gen -> State Nat Gen
+commonFunctor : Gen -> State NameGen Gen
 commonFunctor u @ (MkGen e m1 m2) =
   case mergeableFunctors u of
     [] => pure u
@@ -57,15 +57,15 @@ commonFunctor u @ (MkGen e m1 m2) =
          let m2' = insertFrom (ns `zip` args2) (delete k m2)
          pure $ MkGen e' m1' m2'
 
-msgLoop : Gen -> State Nat Gen
+msgLoop : Gen -> State NameGen Gen
 msgLoop u =
   do u2 <- commonFunctor (mergeSubexp u)
      if u2 == u then pure u
                 else msgLoop u2
 
 export
-msg : Exp -> Exp -> State Nat Gen
+msg : Exp -> Exp -> State NameGen Gen
 msg e1 e2 =
-  do k <- freshName
+  do k <- freshName "v"
      let u = MkGen (Var k) (insert k e1 empty) (insert k e2 empty)
      msgLoop u
