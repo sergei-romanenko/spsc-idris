@@ -63,7 +63,7 @@ evBuilder : TreeBuilder -> String -> String -> Maybe String
 evBuilder treeBuilder givenProg givenExp =
   do prog <- parseProg givenProg
      e <- parseExp givenExp
-     pure $ show $ treeBuilder prog e
+     pure $ show @{ShowTree} $ treeBuilder prog e
 
 --
 

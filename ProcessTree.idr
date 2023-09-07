@@ -43,7 +43,7 @@ implementation Show Node where
 Tree : Type
 Tree = SortedMap NodeId Node
 
-implementation Show Tree where
+[ShowTree] Show Tree where
   show tree = show $ map snd $ toList tree
 
 getNode : Tree -> NodeId -> Node

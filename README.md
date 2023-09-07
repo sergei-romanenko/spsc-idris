@@ -1,5 +1,7 @@
 # A Small Positive Supercompiler in Idris
 
+Install Idris 1.3.4.
+
 To run tests, execute
 ```
 idris --testpkg spsc_idris.ipkg
